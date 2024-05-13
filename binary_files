@@ -1,0 +1,667 @@
+#include <iostream>
+#include <string>
+#include <iomanip>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <stdlib.h>
+#include <stdio.h>
+using namespace std;
+
+const int n = 50; //must be constant for character(char) data types
+struct NAME{
+                    char firstName[n];
+                    char middleInitial[2];
+                    char lastName[n];
+    
+                };
+struct employee{
+                    NAME name;
+                    double rate; //hourly rate
+                    int hours; //worked hours
+                    double gross;
+                    double state_tax;
+                    double fed_tax;
+                    double union_fee;
+                    double net;
+                };
+//PROTOTYPES INFO...
+void menu_selection(char &);
+void input(employee &);
+void rate_validation(employee &);
+void hour_validation(employee &);
+void calculation(employee &);
+//PROTOTYPES FILES...
+void create_file(string &);
+void check_outFile(fstream &, string &);
+void check_inFile(fstream &, string &);
+
+void write_binary(fstream &, employee &, string &, string &);
+void read_binary(fstream &, employee &, string &, string &);
+void append_record(fstream &, employee &, string &, string &);
+void search_record(fstream &, employee &, string &, char [] /*points to string address and its array address*/, string &);
+void delete_record(fstream &, employee &, string &, string &);
+void modify_record(fstream &, employee &, string &, string &);
+void clear_records(fstream &, employee &, string &, string &);
+void sort_record_alp(fstream &, string &, string &);
+void sort_record_grs(fstream &, string &, string &);
+
+void print_data(employee &);
+void print_data2(employee &);
+
+void yn(string &, string &);
+void return_menu(string &);
+void table_labels();
+void confirm(string &, string &);
+
+int main()
+{
+    string iofName;
+    string menu_again;
+    fstream ioFile;
+    employee info;
+    char option;
+    char firstN_compare[n];
+    cout << "EMPLOYEE PAYROLL BINARY-FILE PROGRAMMING. . .\n";
+    create_file(iofName);
+    cout << "\nWhat do you wish to do with this file?\n\n";
+    do
+    {
+        menu_selection(option);
+        //MENU
+        switch(option)
+        {
+            case '1': //convert and write binary to file
+                write_binary(ioFile, info, iofName, menu_again);
+                break;
+                
+            case '2': //translate and read binary from file
+                read_binary(ioFile, info, iofName, menu_again);
+                break;
+                
+            case '3':
+                append_record(ioFile, info, iofName, menu_again);
+                break;
+                
+            case '4':
+                search_record(ioFile, info, iofName, firstN_compare, menu_again);
+                return_menu(menu_again); //have to be separated from function to avoid complications from occurring when calling this function in other functions
+                break;
+                
+            case '5':
+                delete_record(ioFile, info, iofName, menu_again);
+                break;
+                
+            case '6':
+                modify_record(ioFile, info, iofName, menu_again);
+                break;
+                
+            case '7':
+                clear_records(ioFile, info, iofName, menu_again);
+                break;
+                
+            case '8':
+                sort_record_alp(ioFile, iofName, menu_again);
+                break;
+                
+            case '9':
+                sort_record_grs(ioFile, iofName, menu_again);
+                break;
+                
+            case '0':
+                menu_again = "N"; //sets menu_again to "N" to exit out of do-while loop and return 0;
+                break;
+        }
+    } while (menu_again == "Y");
+    return 0;
+}
+
+//Creating a file
+void create_file(string& ioFile1)
+{
+    cout << "Enter a file name: ";
+    getline(cin, ioFile1);
+}
+
+//menu selection
+void menu_selection(char &opt1)
+{
+    cout << "Press \"1\" to populate and input record to binary file.\nPress \"2\" to display content from a binary file as Table.\nPress \"3\" to add more record.\nPress \"4\" to search for a record.\nPress \"5\" to delete a record\nPress \"6\" to modify record.\nPress \"7\" to clear ALL records in the file.\nPress \"8\" to sort records in file alphabetically.\nPress \"9\" to sort files from highest gross income\nPress \"0\" to exit out of program.\n";
+    cin >> opt1;
+    cin.ignore(); //Clears characters from previous "cin" buffers
+    cout << "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\n";
+}
+
+//Input records
+void input(employee& info2)
+{
+    cout << "Enter employee's first name: ";
+    cin >> info2.name.firstName; //Inputs first names of employee and stores it to the array of the data structure's called component
+    info2.name.firstName[0] = toupper(info2.name.firstName[0]); //sets first character to upper case
+    for (int i = 1; i < sizeof(info2.name.firstName); i++) // "sizeof" measures how many bytes or characters there are
+    {
+        info2.name.firstName[i] = tolower(info2.name.firstName[i]); //sets other characters, besides the first, to lwoer case
+    }
+    
+    cout << "Enter employee's middle initial (ONE CHARACTER ONLY): ";
+    cin >> info2.name.middleInitial;
+    info2.name.middleInitial[0] = toupper(info2.name.middleInitial[0]); //sets first character to upper case
+    
+    cout << "Enter employee's last name: ";
+    cin >> info2.name.lastName; //Inputs last name of employee and stores it to the array of the data structure's called component
+    info2.name.lastName[0] = toupper(info2.name.lastName[0]); //sets first character to upper case
+    for (int i = 1; i < sizeof(info2.name.lastName) ; i++) // "strlen" measures how many bytes or characters there are
+    {
+        info2.name.lastName[i] = tolower(info2.name.lastName[i]); //sets other characters, besides the first, to lwoer case
+    }
+    
+    cout << "Enter employee's hourly rate(BETWEEN 0 AND 50): ";
+    cin >> info2.rate; //Inputs employee's hourly rate and stores it to the array of the data structure's called component
+    rate_validation(info2);
+    cout << "Enter employee's hours worked(BETWEEN 0 AND 60): ";
+    cin >> info2.hours; //Inputs employee's worked hours and stores it to the array of the data structure's called component
+    hour_validation(info2);
+    
+    cin.ignore(); //Clears characters from previous buffers/inputs
+    cin.clear();
+    cout << endl;
+}
+
+//Validates input hourly rate
+void rate_validation(employee& info3)
+{
+    while(info3.rate < 0 || info3.rate > 50) //Input rate validation
+    {
+        cout << "RATE MUST BE BETWEEN 0 AND 50! \n";
+        cout << "Please, re-enter a different value: ";
+        cin >> info3.rate;
+    }
+}
+
+//Validates input hours
+void hour_validation(employee& info4)
+{
+    while(info4.hours < 0 || info4.hours > 60) //Input hour validation
+    {
+        cout << "HOURS MUST BE BETWEEN 0 AND 60! \n";
+        cout << "Please, re-eneter a different value: ";
+        cin >> info4.hours;
+    }
+}
+
+//Calculates information
+void calculation(employee& info5)
+{
+    const double STATE_TAX_RATE = 0.06; //6% state tax rate
+    const double FED_TAX_RATE = 0.12; //12% fed tax rate
+    const double UNION_FEE_RATE = 0.02; //2% union fee rate
+    if(info5.hours <= 40)
+    {
+        info5.gross = info5.rate * info5.hours; //Calculates gross if hours <= 40 and stores it at its respective memory address
+    } else {
+        info5.gross = info5.rate * 40 + ((info5.hours - 40) * info5.rate *1.5); //Calculates gross if hours > 40 and stores it at its respective memory address
+    }
+    info5.state_tax = info5.gross * STATE_TAX_RATE; //Calculates state state tax and stores it at its respective memory address
+    info5.fed_tax = info5.gross * FED_TAX_RATE; //Calculates state federal tax and stores it at its respective memory address
+    info5.union_fee = info5.gross * UNION_FEE_RATE; //Calculates union fee and stores it at its respective memory address
+    info5.net = info5.gross - (info5.state_tax + info5.fed_tax + info5.union_fee); //Calculates the net and stores it at its respective memory address
+}
+
+//Validating created file(if possible)
+void check_outFile(fstream& fout1, string& oFile1)
+{
+    while(!fout1)
+    {
+        cin.clear(); //clears buffers
+        cout << "This file name is INVALID.\nEnter a different file name: ";
+        getline (cin, oFile1);
+        fout1.open(oFile1, ios::out | ios::binary); //checks if new file can be opened
+    } //Repeatedly asks to enter a different file name if file cannot eb opened
+}
+
+//Validating called file
+void check_inFile(fstream& fout2, string& iFile1)
+{
+    while(!fout2)
+    {
+        cin.clear(); //clears buffers
+        cout << "This file name is INVALID.\nEnter a different file name: ";
+        getline (cin, iFile1);
+        fout2.open(iFile1, ios::in | ios::binary); //checks if new file can be opened
+    } //Repeatedly asks to input different file name if file cannot be found or opened
+}
+
+//Convert to binary
+void write_binary(fstream& fout3, employee& info6, string& oFile2, string& rtrn2)
+{
+    string more1;
+    fout3.open(oFile2, ios::out | ios::binary); //convert to binary
+    check_outFile(fout3, oFile2); //checking if file can be made and opened
+    input(info6);//Populating record
+    calculation(info6);//executes necessary calculations
+    fout3.write(reinterpret_cast<char*>(&info6), sizeof(info6));
+    fout3.close();
+    cout << "****************** SUCCESSFULLY ADDED NEW RECORD TO FILE ******************\n";
+    cout << "Do you wish to add more record?\n\"Y\" for yes || \"N\" for no:\t";
+    yn(more1, rtrn2);
+    if(more1 == "Y")
+    {
+        append_record(fout3, info6, oFile2, rtrn2);
+    }
+}
+
+//Reading from binary files
+void read_binary(fstream& fin1, employee& info7, string& iFile2, string& rtrn3)
+{
+    fin1.open(iFile2, ios::in | ios::binary); //reopens the pre-existing binary file(without ios::binary to not open it as another binary)
+    check_inFile(fin1, iFile2); //checking if file can be opened
+    
+    //Print data
+    table_labels();
+    while (fin1.read(reinterpret_cast<char*>(&info7), sizeof(info7))) //inputs data to "newInfo" which is another "employee" structure
+    {
+        print_data(info7);
+    } //while reading data, print/display contents at the same time
+    fin1.close();
+    return_menu(rtrn3);
+}
+
+//Adding record to a file
+void append_record(fstream& fout4, employee& info8, string& oFile3, string& rtrn3)
+{
+    string more2;
+    do
+    {
+        fout4.open(oFile3, ios::out | ios::binary | ios::app); //"ios::app" is for appending or adding record to file
+        check_outFile(fout4, oFile3);
+        input(info8);
+        calculation(info8);
+        fout4.write(reinterpret_cast<char*> (&info8), sizeof(info8));
+        fout4.close(); //ensure to close file; otherwise, system will be confused on what to do with the pre-opened file after inserting one record
+        cout << "****************** SUCCESSFULLY ADDED NEW RECORD TO FILE ******************\n";
+        cout << "Do you wish to add more record?\n\"Y\" for yes || \"N\" for no:\t";
+        yn(more2, rtrn3);
+    } while(more2 == "Y");
+}
+
+//Print data
+void print_data(employee& info9)
+{
+    cout << fixed << setprecision(2); //sets numerical values up to only 2 decimal places
+    cout << left << setw(24) << info9.name.firstName << setw(17) << info9.name.middleInitial << setw(21) << info9.name.lastName << "$" << setw(22) << info9.rate << setw(13) << info9.hours << "$" << setw(14) << info9.gross << "$" << setw(16) << info9.state_tax << "$" << setw(15) << info9.fed_tax << "$" << setw(13) << info9.union_fee << "$" << info9.net << endl;
+    cout << "===========================================================================================================================================================================" << endl;
+}
+
+//Labels
+void table_labels()
+{
+    cout << endl;
+    cout << left << setw(79) << " " << "Weekly Payroll Data" << endl;
+    cout << "==========================================================================================================================================================================="<<endl;
+    cout << left << setw(18) << "FIRST NAME" << setw(22) << "MIDDLE INITIAL" << setw(19) << "LAST NAME" << setw(21) << "Rate Per Hour" << setw(20) << "Hours Worked" << setw(13) << "Gross" << setw(17) << "State Tax" << setw(15) << "Fed Tax" << setw(17) << "Union Fee" << setw(13) << "Net" << endl; //This is to make the label //Let setw(n). This will indent the outpout to the left, and count "n" many characters from the left until displaying the value of the next array/variable/Text
+    cout << "===========================================================================================================================================================================" << endl;
+}
+
+//Answers if user wants to add more record
+void yn(string& ans1, string& back)
+{
+    bool good = false; //sets for conditions being true or not
+    do
+    {
+        getline(cin, ans1);
+        ans1 = toupper(ans1.front());
+        cout << endl;
+        if (ans1 == "Y" || ans1 == "N")
+        {
+            good = true; //if answer is "Y" or "N" it will set the bool to true and exit the do-while loop
+            if(ans1 == "N")
+            {
+                return_menu(back);
+            }
+        } else {
+            cout << "INVALID RESPONSE. . .\n(Y/N) ONLY:\t"; //else the bool will remain false and prompts the user top re-enter
+        }
+    } while(good == false); //occurs while bool remains false
+    cin.clear();
+}
+
+//Searching a record and displaying it on screen
+void search_record(fstream& fin2, employee& info10, string& iFile3, char line[], string& rtrn4)
+{
+    char fN[n];
+    string ans2;
+    bool ft = 0; // false = 0
+    long int end1;
+    do
+    {
+        fin2.open(iFile3, ios::in | ios::binary);
+        check_inFile(fin2, iFile3);
+        //check if file is empty:
+            fin2.seekg(0L, ios::end); //tell system to go to the end of opened infile
+            end1 = fin2.tellg(); //records the position
+            if (end1 <= 0)
+            {
+                cout << "EMPTY FILE. . .\n"; //if position is less than or equal to zero, exit
+                exit(1);
+            }
+        cout << "\nSEARCH RECORD...\n--------------------------------------------------------------------------\n\n";
+        cout << "Enter employee's first name: ";
+        cin >> fN;
+        fN[0] = toupper(fN[0]); //sets first character to upper case
+        for (int i = 1; i < sizeof(info10.name.firstName) ; i++) // "strlen" measures how many bytes or characters there are
+        {
+            info10.name.firstName[i] = tolower(info10.name.firstName[i]); //sets other characters, besides the first, to lwoer case
+        }
+        cin.clear(); //Clears buffers
+        cin.ignore(); //Removes characters from "cin" buffers
+        fin2.seekg(0L, ios::beg); // reset the reading point at the very beginning, starting with the very first character of the file
+        while(fin2.read(reinterpret_cast<char *>(&info10), sizeof(info10)))
+        {
+            if(strcmp(fN, info10.name.firstName) == false) //false because this pre-set function returns 0 when true
+            {
+                for (int j = 0; j < sizeof(info10.name.firstName); j++) //transfers contents of char fN[n] to char line[n]
+                {
+                    line[j] = fN[j]; //used for comparison for deleting-record and modifying-record function
+                }
+                cout << "\nRECORD FOUND:\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n";
+                print_data2(info10);
+                ft = true; // true = 1 // sets "ft" bool to true
+                ans2 = "N"; // forces ans2 to be "N" if record found
+            }
+        }
+        
+        if (ft == false) //if while loop does not execute, ft bool remains false
+        {
+            fin2.close(); //closes the file and re-opens if users inputs "Y"
+            cout << "\nRECORD NOT FOUND!\n";
+            cout << "Would you like to enter a different first name?\n" << "\"Y\" for yes || " << "\"N\" for no:\t";
+            yn(ans2, rtrn4); //if ans2 == "N", yn() will call return_menu()
+        }
+    } while (ans2 == "Y");
+    fin2.close();
+}
+
+//printing data as a list
+void print_data2(employee& info11)
+{
+    cout << endl;
+    cout << "First Name: " << info11.name.firstName << endl;
+    cout << "Middle Initial: " << info11.name.middleInitial << endl;
+    cout << "Last Name: " << info11.name.lastName << endl;
+    cout << "Hourly Rate: " << info11.rate << endl;
+    cout << "Week Hours Worked; " << info11.hours << endl;
+    cout << "Gross Income(Pre-taxation): " << info11.gross << endl;
+    cout << "State-taxable Income: " << info11.state_tax << endl;
+    cout << "Federal-taxable income: " << info11.fed_tax << endl;
+    cout << "Union Fee: " << info11.union_fee << endl;
+    cout << "Net Income: " << info11.net << endl << endl;
+}
+
+//Deleting record
+void delete_record(fstream& fin3, employee& info12, string& iFile4, string& rtrn5)
+{
+    char line1[n]; //another char to copy content from input first name from the search_record function
+    fstream oF; //another fstream for ofstream to write to another output file
+    string ans3, confrm1, ans5;
+    string tempF = "temporary.txt";
+    do
+    {
+        search_record(fin3, info12, iFile4, line1, rtrn5);
+        cout << "Delete record?\n" << "\"Y\" for yes || \"N\" for no:\t";
+        yn(ans3, rtrn5); //if ans3 == "N", yn() calls return_menu()
+        if (ans3 == "Y")
+        {
+            confirm(confrm1, rtrn5);
+            if (confrm1 == "Y")
+            {
+                fin3.open(iFile4, ios::in | ios::binary);
+                check_inFile(fin3, iFile4);
+                oF.open(tempF, ios::out | ios::binary);
+                check_outFile(oF, tempF);
+                while(fin3.read(reinterpret_cast<char *>(&info12), sizeof(info12)))
+                {
+                    if(strcmp(info12.name.firstName, line1) != false)  //if not returning zero, continue the following code
+                    {
+                        oF.write(reinterpret_cast<char *>(&info12), sizeof(info12));
+                    }
+                }
+                fin3.close();
+                oF.close();
+                remove(iFile4.c_str()); //remove functions only accepts "char" types // "c_str()" function converts strings into char types
+                rename(tempF.c_str(), iFile4.c_str()); //renames temporary file name in the system to the original file's name
+                cout << "************************* SUCCESSFULLY DELETED ***************************\n\n";
+                cout << "Do you wish to delete more record?\n\"Y\" for yes || \"N\" for no:\t"; //asks to delete more record
+                yn(ans5, rtrn5); //if answer is "Y" then do-while loop repeats and calls search_record function again where it will distinguish if file empty or not, and go through its process if not // if answer is "N," yn() function will call return_menu function
+            }
+        }
+    } while (ans5 == "Y");
+    fin3.close();
+}
+
+//Use for prompting confirmation
+void confirm(string& ans, string& rtrn6)
+{
+    cout << "ARE YOU SURE? " << "(\"Y\" for yes || \"N\" for no)\nConfirm:  ";
+    yn(ans, rtrn6);
+}
+
+//Modifying record
+void modify_record(fstream& fin4, employee& info13, string& iFile5, string& rtrn6)
+{
+    fstream oF2;
+    char line2[n];
+    string ans6, ans7;
+    string temp_file2 = "temporary2.txt";
+    do
+    {
+        search_record(fin4, info13, iFile5, line2, rtrn6);
+        cout << "Do you wish to modify this record?\n\"Y\" for yes || \"N\" for no:\t";
+        yn(ans6, rtrn6); // if ans6 == "N", yn() calls return_menu()
+        cin.clear();
+        if(ans6 == "Y") //if ans == "Y", proceed...
+        {
+            fin4.open(iFile5, ios::in | ios::binary);
+            check_inFile(fin4, iFile5);
+            oF2.open(temp_file2, ios::out | ios::binary);
+            check_outFile(oF2, temp_file2);
+            //fin4.seekg(0, ios::beg); //allows system to read the very beginning of infile
+            while(fin4.read(reinterpret_cast<char *>(&info13), sizeof(info13)))
+            {
+                if(strcmp(line2, info13.name.firstName) != false)
+                {
+                    oF2.write(reinterpret_cast<char*>(&info13), sizeof(info13)); //write all data that are not equal to "line2"(input first name)
+                } else if (strcmp(line2, info13.name.firstName) == false) { //else, if data == line2, make another data input for that record specifically // NOTE: !function that returns boolean
+                    input(info13);
+                    calculation(info13);
+                    oF2.seekp(oF2.tellp(), ios::beg); //seek/set output file position to current writing position // "oF2.tellp()" obtains that current position of output file // ios::beg enables the output file to be read from the beginning // combination of oF2.seekp(oF2.tellp(), ios::beg) sets the writing position to the current position of the output file, which is many bytes later from the beginning of file.
+                    oF2.write(reinterpret_cast<char*>(&info13), sizeof(info13)); //then overwrite  old input to new input at that current position of output file
+                }
+            } // while-loop enables system to continue reading proceeding data
+            fin4.close();//closes fstream as ifstream
+            oF2.close();//closes fstream as ofstream
+            remove(iFile5.c_str()); //removes file with the name that iFile5 carries as a string
+            rename(temp_file2.c_str(), iFile5.c_str()); //rename temporary file to original file // this does NOT swap strings' names with each other // temp_file2 is still "temporary.txt" as a string
+            cout << "************************* SUCCESSFULLY MODIFIED **************************\n\n";
+            cout << "Do you wish to modify more record?\n\"Y\" for yes || \"N\" for no:\t"; //asks to delete more record
+            yn(ans7, rtrn6); //if answer is "Y" then do-while loop repeats and calls search_record function again where it will distinguish if file empty or not, and go through its process if not // if ans7 == "N", yn() calls return_menu()
+        }
+    }while(ans7 == "Y");
+}
+
+//Clearing reecords
+void clear_records(fstream& ioFile2, employee& info14, string& iFile6, string& rtrn7)
+{
+    string ans8, confrm2;
+    ioFile2.open(iFile6, ios::in | ios::binary); //open first as input file
+    check_inFile(ioFile2, iFile6); //check if file exists; otherwise, a supposed non-existing file will be created
+    ioFile2.close();
+    cout << "WARNING: ALL RECORDS WILL BE PERMANENTLY DELETED ! ! !\nDO YOU WISH TO DELETE ALL RECORDS IN THE FILE?\n\"Y\" for yes || \"N\" for no:\t";
+    yn(ans8, rtrn7); //if ans8 == "N", yn() calls return_menu();
+    if (ans8 == "Y") //if ans8 == "Y", proceed...
+    {
+        confirm(confrm2, rtrn7); //same concept as yn(), if confrm2 == "N", it will transfer to yn() where it will call return_menu
+        if (confrm2 == "Y")
+        {
+            ioFile2.open(iFile6, ios::out | ios::binary | ios::trunc); //"ios::trunc" will clear all data upon opening
+            check_outFile(ioFile2, iFile6); //check if file can be opened
+            ioFile2.close();
+            cout << "************************* SUCCESSFULLY CLEARED **************************\n\n";
+            return_menu(rtrn7);
+        }
+    }
+}
+
+//Prompting user to return to main menu
+void return_menu(string& rtrn1)
+{
+    cout << "Do you wish to return to main menu?\n\"Y\" for yes || \"N\" for no:\t";
+    getline(cin, rtrn1);
+    rtrn1 = toupper(rtrn1.front());
+    cout << "\n::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n\n";
+    while (rtrn1 != "Y" && rtrn1 != "N")
+    {
+        cout << "INVALID RESPONSE. . .\n(Y/N) ONLY:\t";
+        getline(cin, rtrn1);
+        rtrn1 = toupper(rtrn1.front());
+        cout << endl;
+    }
+}
+
+//Sorting records alphabetically
+void sort_record_alp(fstream& ioFile3, string& fileN, string& rtrn8)
+{
+    string ans9;
+    string confrm3;
+    cout << "Do you wish to sort records of file in alphabetical order?\n\"Y\" for yes || \"N\" for no:\t";
+    yn(ans9, rtrn8);
+    if (ans9 == "Y") //if ans9 == "Y", proceed...
+    {
+        confirm(confrm3, rtrn8); //same concept as yn(), if confrm2 == "N", it will transfer to yn() where it will call return_menu
+        if (confrm3 == "Y")
+        {
+            fstream oF4;
+            int num_rec = 0;//for counting how many records there are
+            employee temp1;
+            employee *pointer; //used as a pointer for employee to determine where memory is going to be allocated
+            ioFile3.open(fileN, ios::in | ios::binary);
+            check_inFile(ioFile3, fileN);
+            while(ioFile3.read(reinterpret_cast<char *>(&temp1), sizeof(temp1))) //copy all info of info15 to temp1, used later for comparison
+            {
+                num_rec++; //record counter is added 1 in integers as it reads each record in file
+            }
+            ioFile3.close();
+            
+            pointer = new employee[num_rec]; //pointer tells system where values and data of employee struct to be in their specific location in the array when employee is set as one // the new operator makes the employee(pointer) struct as an array with the size of how many records were found when reading ioFile3 // pointer points to the memory of struct employee // struct employee contains data and memory of inputs
+            ioFile3.open(fileN, ios::in | ios::binary);
+            for(int i = 0; i < num_rec; i++)
+            {
+                ioFile3.read(reinterpret_cast<char *>(&pointer[i]), sizeof(pointer[i])); //read the content of ioFile3 and set it to the pointer struct array// the pointer will obtain data from ioFile3 and allocate it in their specified memory destinations in the array
+            }
+            ioFile3.close();
+            
+            //BUBBLE SORTING
+            for (int i = 0; i < num_rec; i++)//for array of pointer
+            {
+                for(int j = i + 1; j < num_rec; j++)//the second record will be the second of content of the second array of pointer // j = i+1 because system must compare the first name of first record and second record // while i = a number, system will compare other records of pointer to its [i] record
+                {
+                    if(strcmp(pointer[i].name.firstName, pointer[j].name.firstName) > false) // if first name of first record > first name of second record...
+                    {
+                        temp1 = pointer[i];
+                        pointer[i] = pointer[j]; //since pointer[j] is smaller, set it to pointer[i]
+                        pointer[j] = temp1; //then pointer[j] would be in the position of previous pointer[i]
+                    }
+                }
+            }
+            string temp_file4 = "temporary4.txt";
+            oF4.open(temp_file4, ios::out | ios::binary);
+            check_outFile(oF4, temp_file4);
+            for (int i = 0; i < num_rec; i++)
+            {
+                oF4.write(reinterpret_cast<char *>(&pointer[i]), sizeof(pointer[i])); //write the new content of *pointer struct array to the outside file
+            }
+            oF4.close();
+            //Saving new sorted info to the original file and displaying its content:
+            remove(fileN.c_str()); //remove original file
+            rename(temp_file4.c_str(), fileN.c_str()); //rename temp file to original file
+            cout << "************************* SUCCESSFULLY SORTED! **************************\n\n";
+            table_labels();
+            for (int i = 0; i < num_rec; i++)
+            {
+                print_data(pointer[i]);
+            }
+            delete[] pointer; //deallocates memory of pointer
+            return_menu(rtrn8);
+        }
+    }
+}
+
+//Sorting record from highest gross income
+void sort_record_grs(fstream& ioFile4, string &fileN2, string &rtrn9)
+{
+    string ans10;
+    string confrm4;
+    cout << "Do you wish to sort records of file from highest order of gross income?\n\"Y\" for yes || \"N\" for no:\t";
+    yn(ans10, rtrn9);
+    if (ans10 == "Y") //if ans9 == "Y", proceed...
+    {
+        confirm(confrm4, rtrn9); //same concept as yn(), if confrm2 == "N", it will transfer to yn() where it will call return_menu
+        if (confrm4 == "Y")
+        {
+            fstream oF5;
+            int counter2 = 0;
+            employee temp2;
+            employee *pointer2; //points to memory allocations of employee struct, to be accessed by pointer2
+           //employee *hold;
+            ioFile4.open(fileN2, ios::in | ios::binary);
+            check_inFile(ioFile4, fileN2);
+            while(ioFile4.read(reinterpret_cast<char *>(&temp2), sizeof(temp2)))
+            {
+                counter2++; //determines how many records there are
+            }
+            ioFile4.close();
+            
+            pointer2 = new employee[counter2]; //makes pointer2 be an array
+            
+            //Transfering data ioFile4 and allocate them to their respective memory locations in pointer2 array
+            ioFile4.open(fileN2, ios::in | ios::binary);
+            for(int i = 0; i < counter2; i++)
+            {
+                ioFile4.read(reinterpret_cast<char *>(&pointer2[i]), sizeof(pointer2[i]));
+            }
+            ioFile4.close();
+            //Bubble sorting
+            for(int i = 0; i < counter2; i++)
+            {
+                for(int j = i + 1; j < counter2; j++)
+                {
+                    if(pointer2[i].gross < pointer2[j].gross) //if gross in first ecord < gross in second record
+                    {
+                        temp2 = pointer2[i]; //put all data from [first] record that holds smaller gross to a temporary struct
+                        pointer2[i] = pointer2[j]; //set the first position of [first] record as the supposed [second] record with the lower gross
+                        pointer2[j] = temp2; //set the [second] record with the record with the lower gross, the [first] record
+                    }
+                }
+            }
+            //Printing new sorted info
+            string temp_file5 = "temporary5.txt";
+            oF5.open(temp_file5, ios::out | ios::binary);
+            check_outFile(oF5, temp_file5);
+            for (int i = 0; i < counter2; i++)
+            {
+                oF5.write(reinterpret_cast<char *>(&pointer2[i]), sizeof(pointer2[i])); //write the new content of *pointer2 struct array to the outside file
+            }
+            oF5.close();
+            //Saving new sorted info to the original file and displaying its content:
+            remove(fileN2.c_str()); //remove original file
+            rename(temp_file5.c_str(), fileN2.c_str()); //rename temp file to original file
+            cout << "************************* SUCCESSFULLY SORTED! **************************\n\n";
+            table_labels();
+            for (int i = 0; i < counter2; i++)
+            {
+                print_data(pointer2[i]);
+            }
+            delete[] pointer2; //deallocates memory of pointer
+            return_menu(rtrn9);
+        }
+    }
+}
